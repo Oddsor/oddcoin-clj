@@ -54,18 +54,16 @@
 (defn block-time-average [block-chain]
   (let [mine-timestamps (take
                           num-blocks-to-calc-difficulty
-                          (map #(.toEpochMilli ^Instant (:mined-at (:block-header %))) block-chain))
+                          (map #(.toEpochMilli %) (filter some? (map #(:mined-at (:block-header %)) block-chain))))
         zipped (map - mine-timestamps (rest mine-timestamps))]
     (/ (reduce + zipped) (count zipped))))
 
 (defn adjustment-factor [block-chain]
   (min 4.0
-       (/
-         target-time
-         (block-time-average block-chain))))
+       (/ target-time (block-time-average block-chain))))
 
 (defn loopy [block-chain]
-  (if (or (= nil (first block-chain)) (empty (first block-chain)))
+  (if (or (nil? (first block-chain)) (empty (first block-chain)))
     genesis-block-difficulty
     (fn [] (/ (loopy (rest block-chain)) (adjustment-factor block-chain)))))
 
