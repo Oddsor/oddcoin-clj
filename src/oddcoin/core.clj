@@ -56,20 +56,20 @@
                           num-blocks-to-calc-difficulty
                           (map #(.toEpochMilli %) (filter some? (map #(:mined-at (:block-header %)) block-chain))))
         zipped (map - mine-timestamps (rest mine-timestamps))]
-    (/ (reduce + zipped) (count zipped))))
+    (/ (reduce + zipped) (max (count zipped) 1))))          ; Avoid division by 0
 
 (defn adjustment-factor [block-chain]
   (min 4.0
-       (/ target-time (block-time-average block-chain))))
+       (/ target-time (max (block-time-average block-chain) 1)))) ; Avoid division by 0
 
-(defn loopy [block-chain]
-  (if (or (nil? (first block-chain)) (empty (first block-chain)))
+(defn desired-diff-loop [block-chain]
+  (if (or (nil? (first block-chain)) (empty? (first block-chain)))
     genesis-block-difficulty
-    (fn [] (/ (loopy (rest block-chain)) (adjustment-factor block-chain)))))
+    (/ (desired-diff-loop (rest block-chain)) (adjustment-factor block-chain))))
 
 (defn desired-difficulty [block-chain]
   (BigDecimal. ^Double (Math/rint
-                         (trampoline loopy block-chain))))
+                         (desired-diff-loop block-chain)))) ; TODO trampoline this to avoid stackyflow
 
 (def block-reward 1000)
 
@@ -116,7 +116,7 @@
   [transactions account parent]
   (let [parent-hash (sha-hash parent)
         desired-difficulty (desired-difficulty parent)
-        valid-chain #(let [diff (difficulty (sha-hash %))   ;TODO something fishy here
+        valid-chain #(let [diff (difficulty (sha-hash %))   ; TODO something fishy here, difficulty is magnitudes lower than desired diff!
                            compare (.compareTo diff desired-difficulty)]
                        (neg-int? compare))
         ts (valid-transactions transactions parent)]
