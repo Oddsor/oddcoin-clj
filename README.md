@@ -12,9 +12,11 @@ Run the jar to create a blockchain with a length of 20
 ## Examples
 This example creates a blockchain with two blocks. We can see that only one of the transactions were actually added to the block because only the miner of the first block has been awarded oddcoins!
 
-    (mine-on [{:from "oddsor", :to "guy2", :amount 100}, {:from "guy3", :to "guy4", :amount 50}]
-             "oddsor"
-             (mine-on [] "oddsor" [[]]))
+    (def blockchain (mine-on [{:from "oddsor", :to "guy2", :amount 100}, {:from "guy3", :to "guy4", :amount 50}]
+                             "oddsor"
+                             (mine-on [] "oddsor" [[]])))
+    => #'oddcoin.core/blockchain
+    blockchain
     =>
     ({:block-header {:miner "oddsor",
                      :parent-hash "a0b1ca4775466d1e0129f9c5a69efa1ef612d814",
@@ -28,5 +30,7 @@ This example creates a blockchain with two blocks. We can see that only one of t
       :block ()}
      [])
 
-Distributed under the Eclipse Public License either version 1.0 or (at
-your option) any later version.
+To see the account balances in the chain:
+
+    (balances blockchain)
+    => {"oddsor" 1900, "guy2" 100}
