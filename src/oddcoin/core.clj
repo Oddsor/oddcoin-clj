@@ -1,7 +1,8 @@
 (ns oddcoin.core
   (:gen-class)
   (:import (org.apache.commons.codec.digest DigestUtils)
-           (java.time Instant))
+           (java.time Instant)
+           (java.math RoundingMode MathContext))
   (:require [clojure.spec.alpha :as s]
             [orchestra.spec.test :as st]))
 
@@ -48,28 +49,30 @@
   (BigDecimal. (BigInteger. blockchain-hash 16)))
 
 (def genesis-block-difficulty 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+(def genesis-decimal (BigDecimal. (BigInteger. (str genesis-block-difficulty))))
 (def target-time 10)
 (def num-blocks-to-calc-difficulty 100)
 
 (defn block-time-average [block-chain]
   (let [mine-timestamps (take
                           num-blocks-to-calc-difficulty
-                          (map #(.toEpochMilli %) (filter some? (map #(:mined-at (:block-header %)) block-chain))))
-        zipped (map - mine-timestamps (rest mine-timestamps))]
-    (/ (reduce + zipped) (max (count zipped) 1))))          ; Avoid division by 0
+                          (map #(.getEpochSecond %) (filter some? (map #(:mined-at (:block-header %)) block-chain))))
+        zipped (map - mine-timestamps (rest mine-timestamps))
+        count (count zipped)]
+    (/ (reduce + zipped) (if (= 0 count) 1 count))))        ; Avoid division by 0
 
 (defn adjustment-factor [block-chain]
-  (min 4.0
-       (/ target-time (max (block-time-average block-chain) 1)))) ; Avoid division by 0
-
-(defn desired-diff-loop [block-chain]
-  (if (or (nil? (first block-chain)) (empty? (first block-chain)))
-    genesis-block-difficulty
-    (/ (desired-diff-loop (rest block-chain)) (adjustment-factor block-chain))))
+  (let [avg (block-time-average block-chain)]
+    (min 4.0
+         (/ target-time (if (= 0 avg) 1 avg)))))            ; Avoid division by 0
 
 (defn desired-difficulty [block-chain]
-  (BigDecimal. ^Double (Math/rint
-                         (desired-diff-loop block-chain)))) ; TODO trampoline this to avoid stackyflow
+  (.round (loop [chain block-chain
+                 accumulated-divisor (BigDecimal. "1")]
+            (if (empty? (first chain))
+              (.divide genesis-decimal accumulated-divisor 10000 RoundingMode/HALF_EVEN)
+              (recur (rest chain) (.multiply (BigDecimal. (float (adjustment-factor chain))) accumulated-divisor)))) ; TODO trampoline this to avoid stackyflow
+          MathContext/DECIMAL32))
 
 (def block-reward 1000)
 
@@ -116,7 +119,7 @@
   [transactions account parent]
   (let [parent-hash (sha-hash parent)
         desired-difficulty (desired-difficulty parent)
-        valid-chain #(let [diff (difficulty (sha-hash %))   ; TODO something fishy here, difficulty is magnitudes lower than desired diff!
+        valid-chain #(let [diff (difficulty (sha-hash %))
                            compare (.compareTo diff desired-difficulty)]
                        (neg-int? compare))
         ts (valid-transactions transactions parent)]
@@ -135,10 +138,10 @@
         :ret ::block-chain)
 
 (defn -main
-  "I don't do a whole lot ... yet."
+  "Mine a block-chain"
   [& args]
-  (loop [chain []
-         times 4]
+  (loop [chain [[]]
+         times 20]
     (if (> times 0)
       (recur (mine-on [] "oddsor" chain) (dec times))
       chain)))
