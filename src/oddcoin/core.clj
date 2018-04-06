@@ -44,7 +44,7 @@
 
 (defn sha-hash
   [^String block-chain]
-  (DigestUtils/sha1Hex (prn-str block-chain)))
+  (DigestUtils/sha1Hex (str block-chain)))
 
 (defn difficulty [^String blockchain-hash]
   (BigDecimal. (BigInteger. blockchain-hash 16)))
@@ -67,7 +67,7 @@
                  accumulated-divisor (BigDecimal. "1")]
             (if (empty? (first chain))
               (.divide genesis-decimal accumulated-divisor 10000 RoundingMode/HALF_EVEN)
-              (recur (rest chain) (.multiply (BigDecimal. (float (adjustment-factor chain))) accumulated-divisor)))) ; TODO trampoline this to avoid stackyflow
+              (recur (rest chain) (.multiply (BigDecimal. (float (adjustment-factor chain))) accumulated-divisor))))
           MathContext/DECIMAL32))
 
 (defn balances [block-chain]
