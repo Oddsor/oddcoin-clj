@@ -42,6 +42,8 @@
 (def num-blocks-to-calc-difficulty 100)
 (def block-reward 1000)
 
+(defrecord transaction [from to amount])
+
 (defn sha-hash
   [^String block-chain]
   (DigestUtils/sha1Hex (prn-str block-chain)))
@@ -52,7 +54,8 @@
 (defn block-time-average [block-chain]
   (let [mine-timestamps (take
                           num-blocks-to-calc-difficulty
-                          (map #(.getEpochSecond %) (filter some? (map #(:mined-at (:block-header %)) block-chain))))
+                          (map #(.getEpochSecond %)
+                               (filter some? (map #(:mined-at (:block-header %)) block-chain))))
         zipped (map - mine-timestamps (rest mine-timestamps))
         count (count zipped)]
     (/ (reduce + zipped) (if (= 0 count) 1 count))))        ; Avoid division by 0
@@ -67,7 +70,8 @@
                  accumulated-divisor (BigDecimal. "1")]
             (if (empty? (first chain))
               (.divide genesis-decimal accumulated-divisor 10000 RoundingMode/HALF_EVEN)
-              (recur (rest chain) (.multiply (BigDecimal. (float (adjustment-factor chain))) accumulated-divisor))))
+              (recur (rest chain)
+                     (.multiply (BigDecimal. (float (adjustment-factor chain))) accumulated-divisor))))
           MathContext/DECIMAL32))
 
 (defn balances [block-chain]

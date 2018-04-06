@@ -12,21 +12,21 @@ Run the jar to create a blockchain with a length of 20
 ## Examples
 This example creates a blockchain with two blocks. We can see that only one of the transactions were actually added to the block because only the miner of the first block has been awarded oddcoins!
 
-    (def blockchain (mine-on [{:from "oddsor", :to "guy2", :amount 100}, {:from "guy3", :to "guy4", :amount 50}]
+    (def blockchain (mine-on [(->transaction "oddsor" "guy2" 100), (->transaction "guy3" "guy4" 50)]
                              "oddsor"
                              (mine-on [] "oddsor" [[]])))
     => #'oddcoin.core/blockchain
     blockchain
     =>
     ({:block-header {:miner "oddsor",
-                     :parent-hash "a0b1ca4775466d1e0129f9c5a69efa1ef612d814",
+                     :parent-hash "17c0940dda03952375a667f98ab90ead6e5408d9",
                      :nonce 0,
-                     :mined-at #object[java.time.Instant 0x3e7e9232 "2018-04-06T21:52:38.493Z"]},
-      :block ({:from "oddsor", :to "guy2", :amount 100})}
+                     :mined-at #object[java.time.Instant 0x65d74d98 "2018-04-06T22:11:00.890Z"]},
+      :block (#oddcoin.core.transaction{:from "oddsor", :to "guy2", :amount 100})}
      {:block-header {:miner "oddsor",
                      :parent-hash "addbc1b3216d2fdb33393ffbbbb6adff83d59e14",
                      :nonce 0,
-                     :mined-at #object[java.time.Instant 0x61962b47 "2018-04-06T21:52:38.489Z"]},
+                     :mined-at #object[java.time.Instant 0x5720af10 "2018-04-06T22:11:00.888Z"]},
       :block ()}
      [])
 
