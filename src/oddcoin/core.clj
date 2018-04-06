@@ -44,7 +44,7 @@
 
 (defn sha-hash
   [^String block-chain]
-  (DigestUtils/sha1Hex (str block-chain)))
+  (DigestUtils/sha1Hex (prn-str block-chain)))
 
 (defn difficulty [^String blockchain-hash]
   (BigDecimal. (BigInteger. blockchain-hash 16)))
