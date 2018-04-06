@@ -6,11 +6,12 @@
   (:require [clojure.spec.alpha :as s]
             [orchestra.spec.test :as st]))
 
+(s/def ::amount int?)
+(s/def ::balances map?)
 (s/def ::account string?)
 (s/def ::from ::account)
 (s/def ::to ::account)
 (s/def ::amount nat-int?)
-;(s/def ::hash #(= "java.security.MessageDigest$Delegate" (type %)))
 (s/def ::hash string?)
 
 (s/def ::transaction (s/keys :req-un [::from
@@ -35,23 +36,18 @@
 
 (s/def ::block-chain (s/coll-of ::node))
 
-(defn sha-hash
-  [^String block-chain]
-  (DigestUtils/sha1Hex (prn-str block-chain)))
-
-(defn make-genesis
-  []
-  [])
-(s/fdef make-genesis
-        :ret ::node)
-
-(defn difficulty [^String blockchain-hash]
-  (BigDecimal. (BigInteger. blockchain-hash 16)))
-
 (def genesis-block-difficulty 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
 (def genesis-decimal (BigDecimal. (BigInteger. (str genesis-block-difficulty))))
 (def target-time 10)
 (def num-blocks-to-calc-difficulty 100)
+(def block-reward 1000)
+
+(defn sha-hash
+  [^String block-chain]
+  (DigestUtils/sha1Hex (prn-str block-chain)))
+
+(defn difficulty [^String blockchain-hash]
+  (BigDecimal. (BigInteger. blockchain-hash 16)))
 
 (defn block-time-average [block-chain]
   (let [mine-timestamps (take
@@ -73,11 +69,6 @@
               (.divide genesis-decimal accumulated-divisor 10000 RoundingMode/HALF_EVEN)
               (recur (rest chain) (.multiply (BigDecimal. (float (adjustment-factor chain))) accumulated-divisor)))) ; TODO trampoline this to avoid stackyflow
           MathContext/DECIMAL32))
-
-(def block-reward 1000)
-
-(s/def ::amount int?)
-(s/def ::balances map?)
 
 (defn balances [block-chain]
   (reduce
@@ -139,7 +130,7 @@
 
 (defn -main
   "Mine a block-chain"
-  [& args]
+  [& _]
   (loop [chain [[]]
          times 20]
     (if (> times 0)
