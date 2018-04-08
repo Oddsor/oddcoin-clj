@@ -69,7 +69,7 @@
   (.round (loop [chain block-chain
                  accumulated-divisor 1M]
             (if (empty? (first chain))
-              (.divide genesis-decimal accumulated-divisor 10000 RoundingMode/HALF_EVEN)
+              (/ genesis-decimal accumulated-divisor)
               (recur (rest chain)
                      (* (bigdec (float (adjustment-factor chain))) accumulated-divisor))))
           MathContext/DECIMAL32))
