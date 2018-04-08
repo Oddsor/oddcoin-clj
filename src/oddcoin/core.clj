@@ -37,7 +37,7 @@
 (s/def ::block-chain (s/coll-of ::node))
 
 (def genesis-block-difficulty 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
-(def genesis-decimal (BigDecimal. (BigInteger. (str genesis-block-difficulty))))
+(def genesis-decimal (bigdec genesis-block-difficulty))
 (def target-time 10)
 (def num-blocks-to-calc-difficulty 100)
 (def block-reward 1000)
@@ -49,7 +49,7 @@
   (DigestUtils/sha1Hex (prn-str block-chain)))
 
 (defn difficulty [^String blockchain-hash]
-  (BigDecimal. (BigInteger. blockchain-hash 16)))
+  (bigdec (clojure.edn/read-string (str "0x" blockchain-hash))))
 
 (defn block-time-average [block-chain]
   (let [mine-timestamps (take
@@ -67,11 +67,11 @@
 
 (defn desired-difficulty [block-chain]
   (.round (loop [chain block-chain
-                 accumulated-divisor (BigDecimal. "1")]
+                 accumulated-divisor 1M]
             (if (empty? (first chain))
               (.divide genesis-decimal accumulated-divisor 10000 RoundingMode/HALF_EVEN)
               (recur (rest chain)
-                     (.multiply (BigDecimal. (float (adjustment-factor chain))) accumulated-divisor))))
+                     (* (bigdec (float (adjustment-factor chain))) accumulated-divisor))))
           MathContext/DECIMAL32))
 
 (defn balances [block-chain]
@@ -138,7 +138,11 @@
   (loop [chain [[]]
          times 20]
     (if (> times 0)
-      (recur (mine-on [] "oddsor" chain) (dec times))
-      chain)))
+      (do
+        (prn "Created block" (first chain))
+        (recur (mine-on [] "oddsor" chain) (dec times)))
+      (do
+        (prn "Run completed!")
+        chain))))
 
 (st/instrument)
